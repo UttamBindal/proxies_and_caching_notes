@@ -1,26 +1,26 @@
 # Reverse Proxy
 
 ## What is a Reverse Proxy?
-A reverse proxy sits in front of one or more web servers and intercepts requests from clients. Ideally, clients are unaware they are communicating with a proxy; they believe they are talking directly to the origin server.
+A reverse proxy guards your web servers. It intercepts client requests and forwards them to the origin server. Clients communicate directly with the proxy, remaining unaware of the backend architecture.
 
 ## Flow
 `Client -> Internet -> Reverse Proxy -> Origin Server`
 
 ## Key Use Cases
-1.  **Load Balancing**: Distributing client requests across multiple backend servers.
-2.  **Security**: Hides the topology and characteristics of the backend servers. Can prevent DDoS attacks.
-3.  **SSL Termination**: Handshake and encryption/decryption happen at the proxy, reducing load on backend servers.
-4.  **Caching**: Serve static content directly without hitting the application server.
-5.  **Compression**: Compress outgoing data to speed up loading times.
+1.  **Load Balancing**: Distribute client requests across multiple backend servers.
+2.  **Security**: Hide the topology and characteristics of backend servers to prevent direct attacks.
+3.  **SSL Termination**: Handle encryption and decryption at the proxy level, reducing load on backend servers.
+4.  **Caching**: Serve static content directly to avoid hitting the application server.
+5.  **Compression**: Compress outgoing data to accelerate loading times.
 
 ## Reverse vs Forward Proxy
--   **Reverse Proxy**: Sits on the server side. Represents the server to the client.
--   **Forward Proxy**: Sits on the client side. Represents the client to the server.
+-   **Reverse Proxy**: Sit on the server side to represent the server to the client.
+-   **Forward Proxy**: Sit on the client side to represent the client to the server.
 
 ## Setup Guide & Configuration (Nginx)
 
 ### Core Configuration
-Reverse proxying is primarily handled by the `proxy_pass` directive inside a `location` block.
+Use the `proxy_pass` directive inside a `location` block to handle reverse proxying.
 
 ```nginx
 location /app/ {
@@ -46,36 +46,36 @@ location /app/ {
 ## Detailed Explanations
 
 ### 1. `proxy_pass` & Trailing Slashes
-The trailing slash is **CRITICAL**.
+The trailing slash defines the path behavior. **Handle with care**.
 
 *   **Case A**: `proxy_pass http://localhost:3000/;`
     *   Request: `example.com/app/user`
-    *   Sent to Backend: `http://localhost:3000/user` (The `/app/` part is stripped).
+    *   Sent to Backend: `http://localhost:3000/user` (The `/app/` part gets stripped).
 *   **Case B**: `proxy_pass http://localhost:3000;` (No trailing slash)
     *   Request: `example.com/app/user`
-    *   Sent to Backend: `http://localhost:3000/app/user` (Path is passed as-is).
+    *   Sent to Backend: `http://localhost:3000/app/user` (The path passes acts-is).
 
 ### 2. Header Manipulation (`proxy_set_header`)
-When Nginx proxies a request, the backend sees the request coming from Nginx (127.0.0.1), not the actual user. We must forward the original details.
+When Nginx proxies a request, the backend sees the request coming from Nginx (127.0.0.1), not the actual user. You must forward the original details.
 
-*   **`Host $host`**: Preserves the original `Host` header (e.g., example.com) instead of changing it to `localhost`. Essential for apps causing virtual hosts.
-*   **`X-Real-IP $remote_addr`**: Passes the client's actual IP.
-*   **`X-Forwarded-For ...`**: Appends the client IP to a list (in case of multiple proxies). Standard for tracing IP chains.
-*   **`X-Forwarded-Proto $scheme`**: Tells the app if the original protocol was `http` or `https` (useful for generating redirect URLs).
+*   **`Host $host`**: Preserve the original `Host` header (e.g., example.com). This is essential for apps using virtual hosts.
+*   **`X-Real-IP $remote_addr`**: Pass the client's actual IP address.
+*   **`X-Forwarded-For ...`**: Append the client IP to a list. Use this standard for tracing IP chains through multiple proxies.
+*   **`X-Forwarded-Proto $scheme`**: Inform the app if the original protocol used `http` or `https` (vital for generating redirect URLs).
 
 ### 3. Timeouts
-*   **`proxy_connect_timeout`**: How long to wait for the backend to accept the connection (TCP handshake).
-*   **`proxy_read_timeout`**: How long to wait for the backend to send data back. If you have a slow API route (e.g., generating a PDF), you **must** increase this (e.g., `300s`), otherwise Nginx returns `504 Gateway Timeout`.
+*   **`proxy_connect_timeout`**: Define the wait time for the backend to accept the connection (TCP handshake).
+*   **`proxy_read_timeout`**: Define the wait time for the backend to send data back. Increase this (e.g., `300s`) for slow API routes to avoid `504 Gateway Timeout` errors.
 
 ### 4. Buffering
-*   **`proxy_buffering on`**: Default. Nginx reads the entire response from the backend, then sends it to the client.
-    *   *Pros*: Offloads the backend quickly.
+*   **`proxy_buffering on`**: Enable buffering (default). Nginx reads the entire response from the backend before sending it to the client.
+    *   *Pros*: Offload the backend quickly.
     *   *Cons*: First byte latency might be higher for large streams.
-*   **`proxy_buffering off`**: Stream data to client as it comes from backend.
+*   **`proxy_buffering off`**: Stream data to the client immediately as it arrives from the backend.
     *   *Use Case*: Real-time event streaming or Comet applications.
 
 ## WebSocket Support
-WebSockets require special headers (`Upgrade` and `Connection`) because they switch protocols from HTTP to WebSocket. Nginx drops these by default.
+WebSockets require special headers (`Upgrade` and `Connection`) because they switch protocols from HTTP to WebSocket. Explicitly add these, as Nginx drops them by default.
 
 ```nginx
 location /ws/ {

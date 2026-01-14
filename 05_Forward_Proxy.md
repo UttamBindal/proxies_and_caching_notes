@@ -1,20 +1,20 @@
 # Forward Proxy
 
 ## What is a Forward Proxy?
-A forward proxy, commonly known simply as a "proxy," sits in front of a group of client machines. When those clients make requests to sites on the Internet, the proxy server intercepts those requests and then communicates with the web servers on behalf of those clients.
+A forward proxy, or simply "proxy," serves as a gateway for client machines. It intercepts requests from clients to the internet and communicates with web servers on their behalf.
 
 ## Flow
 `Client -> Forward Proxy -> Internet (or Destination Server)`
 
 ## Key Use Cases
-1.  **Privacy/Anonymity**: Hides the client's internal IP address from the internet. The destination sees the Proxy's IP.
-2.  **Content Filtering**: Schools or workplaces use proxies to block access to certain websites (e.g., social media).
-3.  **Bypassing Geo-Restrictions**: Accessing content restricted to a certain region by routing through a proxy in that region.
-4.  **Caching**: Similar to reverse proxies, forward proxies can cache frequently accessed resources to save bandwidth for a local network.
+1.  **Privacy/Anonymity**: Mask the client's internal IP address. The destination sees only the Proxy's IP.
+2.  **Content Filtering**: Block access to specific websites (e.g., social media) in schools or workplaces.
+3.  **Bypassing Geo-Restrictions**: Route through a proxy in a specific region to access locally restricted content.
+4.  **Caching**: Cache frequently accessed resources to save bandwidth on the local network.
 
 ## Forward vs Reverse Proxy
--   **Forward Proxy**: Protects/Serve the **Client**.
--   **Reverse Proxy**: Protects/Serve the **Server**.
+-   **Forward Proxy**: Actively protect and serve the **Client**.
+-   **Reverse Proxy**: Actively protect and serve the **Server**.
 
 ## Setup Guide & Configuration (Squid Proxy)
 
@@ -24,10 +24,10 @@ sudo apt install squid
 ```
 
 ### Overview of `squid.conf`
-Squid configuration is located at `/etc/squid/squid.conf`. It is famous for being very large. It works using ACLs (Access Control Lists) and Access Directives.
+The Squid configuration resides at `/etc/squid/squid.conf`. Users know it for its size and flexibility. It operates using ACLs (Access Control Lists) and Access Directives.
 
 ### Rule Logic
-Squid checks rules **top-down**. The first rule that matches determines the action (Allow or Deny).
+Squid checks rules **top-down**. The first matching rule determines the action (Allow or Deny).
 
 ### Basic Structure
 
@@ -60,7 +60,7 @@ http_port 3128
 ## Detailed Directives
 
 ### 1. `acl` (Access Control List)
-Defines "groups" of things to match against.
+Define "groups" to match against.
 *   **Syntax**: `acl <name> <type> <value>`
 *   **Types**:
     *   `src`: Source IP address (Client IP).
@@ -74,7 +74,7 @@ acl social_media dstdomain .facebook.com .twitter.com .instagram.com
 ```
 
 ### 2. `http_access` (The Gatekeeper)
-Applies actions to ACLs.
+Apply actions to ACLs.
 *   **Syntax**: `http_access <allow|deny> <acl_name>`
 
 **Example: Deny the Social Media ACL created above**
@@ -83,22 +83,22 @@ http_access deny social_media
 ```
 
 ### 3. `http_port`
-*   `http_port 3128`: The standard proxy port.
-*   `http_port 3128 intercept`: Used for "Transparent Proxying" (requires iptables redirection), where clients don't need to configure their browser manually.
+*   `http_port 3128`: Use the standard proxy port.
+*   `http_port 3128 intercept`: Enable "Transparent Proxying" (requires iptables redirection) so clients connect without manual browser configuration.
 
 ### 4. Caching Directives
-Control how usage is stored on disk/ram.
+Control disk and RAM storage usage.
 
 ```squid
 # cache_dir <storage_type> <directory> <size_MB> <L1_dirs> <L2_dirs>
 cache_dir ufs /var/spool/squid 100 16 256
 ```
 *   `ufs`: Standard unix file system storage.
-*   `100`: Use 100MB of disk.
-*   `16 256`: Directory structure depth for performance (don't change usually).
+*   `100`: Allocate 100MB of disk.
+*   `16 256`: Set directory structure depth for performance (keep defaults usually).
 
 ### 5. `visible_hostname`
-If squid cannot detect the system hostname, it fails.
+Squid requires a detectable hostname. If detection fails, set it manually.
 ```squid
 visible_hostname proxy.mycompany.com
 ```
