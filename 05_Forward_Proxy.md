@@ -63,10 +63,13 @@ http_port 3128
 Define "groups" to match against.
 *   **Syntax**: `acl <name> <type> <value>`
 *   **Types**:
-    *   `src`: Source IP address (Client IP).
-    *   `dstdomain`: Destination domain (e.g., `.facebook.com`).
-    *   `time`: Time of day/week (e.g., `M T W H F 09:00-17:00`).
-    *   `port`: Destination port.
+    *   `src`: Source IP	Defines the client's IP address or subnet (e.g., 192.168.1.0/24).
+    *   `dstdomain`: Destination	Targets specific websites (e.g., .google.com).
+    *   `port`: Port Number	Restricts traffic to specific ports (e.g., 80, 443).
+    *   `proto`: Protocol	Filters by protocol type (e.g., HTTP, FTP).
+    *   `method`: HTTP Method	Filters by action like GET, POST, or CONNECT.
+    *   `time`: Time/Day	Restricts access to specific hours (e.g., MTWHF 09:00-17:00).
+    *   `url_regex`: Pattern Match	Uses Regular Expressions to find keywords in a URL.
 
 **Example: Block Social Media**
 ```squid
@@ -102,3 +105,33 @@ Squid requires a detectable hostname. If detection fails, set it manually.
 ```squid
 visible_hostname proxy.mycompany.com
 ```
+
+### 6. Privacy & Header Manipulation
+You can configure Squid to be an Anonymizing Proxy.
+
+*   `forwarded_for off`: Stops the proxy from revealing the client's internal IP address to the target website.
+*   `request_header_access Via deny all`: Removes the header that identifies the server as a proxy, making the connection appear direct.
+
+### 7. Logging Block
+Essential for monitoring and auditing.
+
+*   `access_log /var/log/squid/access.log`: Logs every URL visited and the result (TCP_MISS, TCP_HIT, etc.).
+*   `cache_log /var/log/squid/cache.log`: Logs system-level errors and startup information.
+
+### 8. Authentication Block (Optional but Recommended)
+To require a username and password, you must link Squid to an external authentication helper.
+
+```squid
+# Define the helper program (NCSA is standard for file-based passwords)
+auth_param basic program /usr/lib/squid/basic_ncsa_auth /etc/squid/passwords
+auth_param basic realm Proxy Login Required
+acl authenticated_users proxy_auth REQUIRED
+
+# Rule: Allow only logged-in users
+http_access allow authenticated_users
+```
+
+## Useful Commands
+*   Check config for errors: `squid -k parse`
+*   Apply changes without restart: `squid -k reconfigure`
+*   Initialize cache directories: `squid -z`    
